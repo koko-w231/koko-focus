@@ -413,13 +413,16 @@
   /* 长期目标面板 */
   .mm-layout{display:flex; gap:20px; align-items:flex-start; margin-top:4px;}
   #mindmap{flex:1 1 auto; min-width:0;}
-  .lg-panel{flex:0 0 320px; max-width:320px; background:rgba(241,245,249,.55); border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:16px; align-self:stretch;}
+  .lg-panel{flex:0 0 320px; max-width:320px; background:rgba(241,245,249,.55); border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:16px; padding-top:var(--lg-title-offset,72px); align-self:stretch;}
   .lg-title{margin:0 0 12px; font-size:16px; font-weight:800; color:var(--ink);}
-  /* 「🎯 长期目标」与左侧「全部：展开到具体任务」对齐：面板顶部垫高（桌面端） */
-  .lg-panel{padding-top:calc(16px + var(--lg-title-offset,98px));}
   .lg-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .lg-days{font-size:12px; font-weight:700; color:#4B5BD6; background:rgba(91,124,250,.12); padding:2px 8px; border-radius:8px; white-space:nowrap;}
   .lg-days.overdue{color:#DC2626; background:rgba(248,113,113,.14);}
+  .lg-grip{cursor:grab; user-select:none; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:8px; color:var(--muted-2); background:rgba(148,163,184,.12); font-size:14px; line-height:1; flex:0 0 auto; transition:.2s var(--ease);}
+  .lg-grip:hover{background:rgba(91,124,250,.16); color:#4B5BD6;}
+  .lg-grip:active{cursor:grabbing;}
+  .lg-item.dragging{opacity:.45;}
+  .lg-item.drag-over{box-shadow:0 0 0 2px var(--accent) inset; border-radius:12px;}
   .lg-add{display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(148,163,184,.3);}
   .lg-input{min-height:42px; font-size:16px; padding:0 12px; border-radius:12px; border:1px solid rgba(148,163,184,.3); background:rgba(255,255,255,.92); color:var(--ink); font-family:inherit; width:100%; box-sizing:border-box;}
   .lg-input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(91,124,250,.15);}
@@ -431,6 +434,7 @@
   .lg-item{background:rgba(255,255,255,.8); border:1px solid rgba(148,163,184,.22); border-radius:14px; padding:12px;}
   .lg-item.done{background:rgba(52,211,153,.1); border-color:rgba(52,211,153,.35);}
   .lg-item-top{display:flex; align-items:center; gap:8px; justify-content:space-between;}
+  .lg-item-top .lg-name{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .lg-name{font-weight:700; font-size:14px; color:var(--ink); word-break:break-word;}
   .lg-meta{margin:8px 0 6px;}
   .lg-deadline{font-size:12px; font-weight:600; color:var(--muted);}
@@ -1430,6 +1434,24 @@ function uncompleteLongGoal(id){
   g.done=false; g.completedAt='';
   saveState(); refreshAll(); toast('已恢复为未完成'); playSfx('add');
 }
+function moveLongGoal(fromId,toId){
+  const list=state.longGoals||[];
+  const fi=list.findIndex(x=>x.id===fromId); const ti=list.findIndex(x=>x.id===toId);
+  if(fi<0||ti<0||fi===ti) return;
+  const [it]=list.splice(fi,1); list.splice(ti,0,it);
+  saveState(); renderLongGoals();
+}
+function bindLGDrag(){
+  const box=document.getElementById('lgList'); if(!box) return;
+  let dragId=null;
+  box.querySelectorAll('.lg-item[draggable="true"]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{ dragId=el.dataset.gid; el.classList.add('dragging'); try{e.dataTransfer.setData('text/plain',dragId);}catch(_){} });
+    el.addEventListener('dragend',()=>{ el.classList.remove('dragging'); box.querySelectorAll('.lg-item').forEach(x=>x.classList.remove('drag-over')); });
+    el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('drag-over'); });
+    el.addEventListener('dragleave',()=>{ el.classList.remove('drag-over'); });
+    el.addEventListener('drop',e=>{ e.preventDefault(); el.classList.remove('drag-over'); const to=el.dataset.gid; if(dragId&&to&&dragId!==to) moveLongGoal(dragId,to); });
+  });
+}
 function deleteLongGoal(id){
   state.longGoals=state.longGoals.filter(x=>x.id!==id);
   saveState(); refreshAll(); toast('已删除');
@@ -1469,7 +1491,7 @@ function renderLongGoals(){
         '<div class="lg-btns"><button class="mini-btn save" onclick="saveLongGoal(\''+g.id+'\')">保存</button><button class="mini-btn ghost" onclick="cancelLgEdit()">取消</button></div>'+
       '</div>';
     } else {
-      h+='<div class="lg-item"><div class="lg-item-top"><span class="lg-name">'+esc(g.name)+'</span><span class="tag-chip" style="background:'+tagColor(g.tag)+'">'+esc(g.tag)+'</span></div>'+
+      h+='<div class="lg-item" draggable="true" data-gid="'+g.id+'"><div class="lg-item-top"><span class="lg-name">'+esc(g.name)+'</span><span class="tag-chip" style="background:'+tagColor(g.tag)+'">'+esc(g.tag)+'</span><span class="lg-grip" title="拖动排序">≡</span></div>'+
         (g.deadline?'<div class="lg-meta"><span class="lg-deadline'+(overdue?' overdue':'')+'">📅 截止 '+fmtMD(g.deadline)+'</span><span class="lg-days'+(overdue?' overdue':'')+'">'+fmtDaysLeft(g.deadline)+'</span></div>':'')+
         '<div class="lg-btns"><button class="mini-btn ghost" onclick="editLongGoal(\''+g.id+'\')">编辑</button><button class="mini-btn" onclick="completeLongGoal(\''+g.id+'\')">完成</button><button class="mini-btn del" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
     }
@@ -1489,6 +1511,7 @@ function renderLongGoals(){
     al.innerHTML=ah;
     al.style.display=lgArchOpen?'block':'none';
   }
+  bindLGDrag();
 }
 
 function refreshAll(){
