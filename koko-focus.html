@@ -427,6 +427,11 @@
   .lg-input{min-height:42px; font-size:16px; padding:0 12px; border-radius:12px; border:1px solid rgba(148,163,184,.3); background:rgba(255,255,255,.92); color:var(--ink); font-family:inherit; width:100%; box-sizing:border-box;}
   .lg-input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(91,124,250,.15);}
   .lg-add-row{display:flex; gap:8px;}
+  /* 长期目标：日期选择触发器（替代原生 date input） */
+  .lg-date-btn{min-height:42px; font-size:14px; padding:0 12px; border-radius:12px; border:1px solid rgba(148,163,184,.3); background:rgba(255,255,255,.92); color:var(--muted); font-family:inherit; font-weight:600; width:100%; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:6px; cursor:pointer; transition:.22s var(--ease); text-align:left;}
+  .lg-date-btn:hover{border-color:var(--accent); background:#fff;}
+  .lg-date-btn.has{color:var(--ink);}
+  .lg-date-btn svg{width:14px; height:14px; flex:0 0 auto; opacity:.55;}
   .lg-add-row .lg-input{flex:1; min-width:0;}
   .lg-add-btn{min-height:44px; border-radius:12px; border:none; background:var(--accent-grad); color:#fff; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 10px 22px -10px rgba(91,124,250,.6);}
   .lg-add-btn:hover{filter:brightness(1.05);}
@@ -475,6 +480,10 @@
   .cal-cell.sel{background:var(--accent); border-color:var(--accent); color:#fff;}
   .cal-cell.inrange{background:rgba(124,108,246,.2); color:#4B3DB6;}
   .cal-cell.sel.today{background:var(--accent); color:#fff;}
+  .cal-quick{display:flex; gap:6px; margin-top:11px;}
+  .cal-quick button{flex:1; min-height:34px; border-radius:10px; font-size:12px; font-weight:700; background:rgba(255,255,255,.85); border:1px solid rgba(124,108,246,.28); color:#4B5BD6; font-family:inherit; cursor:pointer; transition:.2s var(--ease); white-space:nowrap;}
+  .cal-quick button:hover{background:rgba(124,108,246,.12); border-color:var(--accent); transform:translateY(-1px);}
+  .cal-quick button:active{transform:scale(.95);}
   .cal-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding-top:10px; border-top:1px dashed rgba(148,163,184,.3); font-size:12px; font-weight:600; color:var(--muted);}
 </style>
 </head>
@@ -608,7 +617,7 @@
             <input id="lgName" class="lg-input" placeholder="输入长期目标…">
             <div class="lg-add-row">
               <input id="lgTag" class="lg-input" list="lgTagList" placeholder="标签">
-              <input id="lgDeadline" class="lg-input" type="date">
+              <button type="button" id="lgDeadline" class="lg-date-btn" onclick="openLGCal('add')"><span id="lgDeadlineTxt">选择截止日期</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>
             </div>
             <button class="lg-add-btn" onclick="addLongGoal()">+ 添加目标</button>
           </div>
@@ -1367,6 +1376,8 @@ function renderWeekCal(){
 /* ============ 通用日期选择弹窗（导图自定义区间复用同款日历） ============ */
 let dateCalMonth=new Date();
 let dateCalTarget='from';
+/* 长期目标日期选择：暂存选中值（'' 表示未选/清除） */
+let lgCalValue='';
 function openDateCal(which){
   dateCalTarget=which;
   const base=(which==='from'?mmFrom:mmTo)||todayStr();
@@ -1375,12 +1386,45 @@ function openDateCal(which){
   renderDateCal();
   document.getElementById('datePop').style.display='flex';
 }
+/* which: 'add' | 'edit' */
+function openLGCal(which){
+  dateCalTarget = which==='edit' ? 'lgEdit' : 'lgAdd';
+  const id = which==='edit' ? 'lgEditDeadline' : 'lgDeadline';
+  const el = document.getElementById(id);
+  const cur = el ? (el.dataset.value||'') : '';
+  lgCalValue = cur;
+  const d = cur ? (parseYMD(cur)||new Date()) : new Date();
+  dateCalMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+  renderDateCal();
+  document.getElementById('datePop').style.display='flex';
+}
+/* 快速跳月：跳到 n 个月后的那个月（保留当前日期的“日”） */
+function lgCalJump(n){
+  const base = lgCalValue ? (parseYMD(lgCalValue)||new Date()) : new Date();
+  const y = base.getFullYear(), m = base.getMonth() + n;
+  dateCalMonth = new Date(y, m, 1);
+  renderDateCal();
+}
+function lgCalClear(){ lgCalValue=''; renderDateCal(); }
+function lgCalConfirm(){
+  const isEdit = dateCalTarget==='lgEdit';
+  const el = document.getElementById(isEdit ? 'lgEditDeadline' : 'lgDeadline');
+  if(el){
+    el.dataset.value = lgCalValue;
+    el.classList.toggle('has', !!lgCalValue);
+    const txt = document.getElementById(isEdit ? 'lgEditDeadlineTxt' : 'lgDeadlineTxt');
+    if(txt) txt.textContent = lgCalValue ? fmtMD(lgCalValue) : '选择截止日期';
+  }
+  closeDateCal();
+  toast(lgCalValue ? '已选择 ' + fmtMD(lgCalValue) : '已清除截止日期');
+}
 function closeDateCal(){ document.getElementById('datePop').style.display='none'; }
 function renderDateCal(){
   const y=dateCalMonth.getFullYear(), m=dateCalMonth.getMonth();
   const first=new Date(y,m,1); const startPad=(first.getDay()+6)%7;
   const dim=new Date(y,m+1,0).getDate();
   const today=todayStr();
+  const isLG = (dateCalTarget==='lgAdd' || dateCalTarget==='lgEdit');
   let html='<div class="cal-head"><button id="dcalPrev">\u2039</button><span>'+y+'\u5e74'+(m+1)+'\u6708</span><button id="dcalNext">\u203a</button></div>';
   html+='<div class="cal-grid">';
   const wd=['\u4e00','\u4e8c','\u4e09','\u56db','\u4e94','\u516d','\u65e5'];
@@ -1388,18 +1432,33 @@ function renderDateCal(){
   for(let i=0;i<startPad;i++) html+='<div class="cal-cell empty"></div>';
   for(let d=1; d<=dim; d++){
     const ds=ymd(new Date(y,m,d));
-    const isEnd=(ds===mmFrom||ds===mmTo);
-    const inR=!!(mmFrom&&mmTo&&ds>mmFrom&&ds<mmTo);
-    html+='<div class="cal-cell'+(ds===today?' today':'')+(isEnd?' sel':'')+(inR?' inrange':'')+'" onclick="pickDateCal(\''+ds+'\')">'+d+'</div>';
+    let cls='cal-cell'+(ds===today?' today':'');
+    if(isLG){
+      if(ds===lgCalValue) cls+=' sel';
+    } else {
+      const isEnd=(ds===mmFrom||ds===mmTo);
+      const inR=!!(mmFrom&&mmTo&&ds>mmFrom&&ds<mmTo);
+      if(isEnd) cls+=' sel';
+      if(inR) cls+=' inrange';
+    }
+    html+='<div class="'+cls+'" onclick="pickDateCal(\''+ds+'\')">'+d+'</div>';
   }
   html+='</div>';
-  html+='<div class="cal-foot"><span>'+(dateCalTarget==='from'?'\u9009\u62e9\u5f00\u59cb\u65e5\u671f':'\u9009\u62e9\u7ed3\u675f\u65e5\u671f')+'</span><button class="mini-btn" onclick="closeDateCal()">\u5173\u95ed</button></div>';
+  if(isLG){
+    html+='<div class="cal-quick"><button onclick="lgCalJump(1)">+1 个月</button><button onclick="lgCalJump(2)">+2 个月</button><button onclick="lgCalJump(3)">+3 个月</button></div>';
+    html+='<div class="cal-foot"><span>'+(lgCalValue?('已选 '+fmtMD(lgCalValue)):'点月份快捷跳转，再选具体日期')+'</span><span style="display:flex;gap:8px">'+
+          '<button class="mini-btn ghost" onclick="lgCalClear()">清除</button>'+
+          '<button class="mini-btn" onclick="lgCalConfirm()">确定</button></span></div>';
+  } else {
+    html+='<div class="cal-foot"><span>'+(dateCalTarget==='from'?'\u9009\u62e9\u5f00\u59cb\u65e5\u671f':'\u9009\u62e9\u7ed3\u675f\u65e5\u671f')+'</span><button class="mini-btn" onclick="closeDateCal()">\u5173\u95ed</button></div>';
+  }
   const box=document.getElementById('dateBox');
   box.innerHTML=html;
   document.getElementById('dcalPrev').onclick=()=>{ dateCalMonth=new Date(y, m-1, 1); renderDateCal(); };
   document.getElementById('dcalNext').onclick=()=>{ dateCalMonth=new Date(y, m+1, 1); renderDateCal(); };
 }
 function pickDateCal(ds){
+  if(dateCalTarget==='lgAdd' || dateCalTarget==='lgEdit'){ lgCalValue=ds; renderDateCal(); return; }
   if(dateCalTarget==='from'){ mmFrom=ds; if(mmTo&&mmTo<ds) mmTo=ds; }
   else { mmTo=ds; if(mmFrom&&mmFrom>ds) mmFrom=ds; }
   closeDateCal();
@@ -1420,11 +1479,12 @@ let lgEditing=null;
 function addLongGoal(){
   const nm=document.getElementById('lgName'); const tg=document.getElementById('lgTag'); const dl=document.getElementById('lgDeadline');
   if(!nm) return;
-  const name=nm.value.trim(); const tag=(tg?tg.value.trim():'')||'其他'; const deadline=dl?dl.value:'';
+  if(dl && dl.dataset.value===undefined) dl.dataset.value='';
+  const name=nm.value.trim(); const tag=(tg?tg.value.trim():'')||'其他'; const deadline=dl?(dl.dataset.value||''):'';
   if(!name){ toast('先写个目标名吧～'); return; }
   state.longGoals.push({id:uid(),name:name,tag:tag,deadline:deadline,note:'',done:false,completedAt:''});
   saveState(); refreshAll();
-  nm.value=''; if(tg)tg.value=''; if(dl)dl.value='';
+  nm.value=''; if(tg)tg.value=''; if(dl){ dl.dataset.value=''; dl.classList.remove('has'); const t=document.getElementById('lgDeadlineTxt'); if(t) t.textContent='选择截止日期'; }
   toast('已添加长期目标'); playSfx('add');
 }
 function completeLongGoal(id){
@@ -1471,7 +1531,7 @@ function saveLongGoal(id){
   const nm=document.getElementById('lgEditName'); const tg=document.getElementById('lgEditTag'); const dl=document.getElementById('lgEditDeadline');
   if(nm&&nm.value.trim()) g.name=nm.value.trim();
   if(tg&&tg.value.trim()) g.tag=tg.value.trim();
-  if(dl) g.deadline=dl.value;
+  if(dl) g.deadline=dl.dataset.value||'';
   lgEditing=null; saveState(); refreshAll(); toast('已保存'); playSfx('add');
 }
 function renderLongGoals(){
@@ -1489,7 +1549,7 @@ function renderLongGoals(){
         '<input id="lgEditName" class="lg-input lg-edit-name" value="'+esc(g.name)+'">'+
         '<div class="lg-edit-row">'+
           '<input id="lgEditTag" class="lg-input" list="lgTagList" value="'+esc(g.tag)+'" placeholder="标签">'+
-          '<input id="lgEditDeadline" class="lg-input" type="date" value="'+esc(g.deadline||'')+'">'+
+          '<button type="button" id="lgEditDeadline" class="lg-date-btn'+(g.deadline?' has':'')+'" onclick="openLGCal(\'edit\')"><span id="lgEditDeadlineTxt">'+(g.deadline?esc(fmtMD(g.deadline)):'选择截止日期')+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></button>'+
         '</div>'+
         '<div class="lg-btns"><button class="mini-btn save" onclick="saveLongGoal(\''+g.id+'\')">保存</button><button class="mini-btn ghost" onclick="cancelLgEdit()">取消</button></div>'+
       '</div>';
