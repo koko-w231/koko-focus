@@ -433,6 +433,7 @@
   .lg-date-btn.has{color:var(--ink);}
   .lg-date-btn svg{width:14px; height:14px; flex:0 0 auto; opacity:.55;}
   .lg-add-row .lg-input{flex:1; min-width:0;}
+  .lg-add-row .lg-date-btn{flex:1; min-width:0;}
   .lg-add-btn{min-height:44px; border-radius:12px; border:none; background:var(--accent-grad); color:#fff; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 10px 22px -10px rgba(91,124,250,.6);}
   .lg-add-btn:hover{filter:brightness(1.05);}
   .lg-list{display:flex; flex-direction:column; gap:10px;}
@@ -459,8 +460,10 @@
   .lg-edit-name{font-weight:700; font-size:14px; margin-bottom:8px;}
   .lg-edit-row{display:flex; gap:8px; margin-bottom:8px;}
   .lg-edit-row .lg-input{flex:1; min-width:0;}
+  .lg-edit-row .lg-date-btn{flex:1; min-width:0;}
   .mini-btn.save{background:var(--accent-grad); color:#fff;}
   @media(max-width:768px){ .mm-layout{flex-direction:column;} .lg-panel{flex:1 1 auto; max-width:none; width:100%; margin-top:0;} }
+  @media(max-width:420px){ .lg-add-row, .lg-edit-row{flex-direction:column;} }
 
   /* ===== 周报日历弹窗 ===== */
   .cal-pop{position:fixed; inset:0; z-index:80; background:rgba(15,23,42,.28); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px;}
