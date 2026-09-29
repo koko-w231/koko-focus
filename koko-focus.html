@@ -469,6 +469,10 @@
     .memo-ev{font-size:9.5px; padding:2px 4px;}
     .memo-d{font-size:11px;}
     .memo-grid, .memo-wd{gap:3px;}
+    /* 移动端取消正方形：自然高度完整显示 5 行 */
+    .memo-scroll-wrap.sq{aspect-ratio:auto;}
+    .memo-grid.scroll-mode{height:auto; grid-template-rows:none;}
+    .memo-grid.scroll-mode .memo-cell{min-height:74px;}
   }
 
   /* ===== 月历备忘 ===== */
@@ -484,12 +488,12 @@
   .memo-modes button{width:auto; height:auto; min-height:28px; padding:0 11px; border:none; border-radius:8px; background:transparent; font-size:11.5px; font-weight:700; color:var(--muted); font-family:inherit; cursor:pointer; transition:.22s var(--ease); white-space:nowrap;}
   .memo-modes button.on{background:#fff; color:var(--accent); box-shadow:0 2px 8px -3px rgba(40,52,120,.3);}
   .memo-modes button:hover:not(.on){color:var(--accent);}
-  /* 滚动视窗：固定高度，今天那周固定在中间行 */
+  /* 滚动视窗：正方形（宽=高），5 行平分完整显示 */
   .memo-scroll-wrap{position:relative; overflow:hidden; border-radius:14px;}
-  .memo-scroll-wrap::after{content:''; position:absolute; left:0; right:0; bottom:0; height:34px; background:linear-gradient(to top, rgba(255,255,255,.92), rgba(255,255,255,0)); pointer-events:none; z-index:2;}
-  .memo-grid.scroll-mode{position:relative; gap:7px;}
+  .memo-scroll-wrap.sq{aspect-ratio:1/1;}
+  .memo-grid.scroll-mode{position:relative; gap:7px; height:100%; grid-template-rows:repeat(5,1fr);}
   /* 独立圆角卡片：取消统一底，只保留边框 */
-  .memo-grid.scroll-mode .memo-cell{min-height:84px; background:#fff; border:1px solid rgba(148,163,184,.18); box-shadow:0 1px 3px -1px rgba(40,52,120,.08); padding:7px 7px 6px; overflow:visible;}
+  .memo-grid.scroll-mode .memo-cell{min-height:0; background:#fff; border:1px solid rgba(148,163,184,.18); box-shadow:0 1px 3px -1px rgba(40,52,120,.08); padding:7px 7px 6px; overflow:visible;}
   .memo-grid.scroll-mode .memo-items{overflow:visible;}
   .memo-grid.scroll-mode .memo-ev{position:relative; z-index:2;}
   .memo-grid.scroll-mode .memo-ev.span-s{width:calc(100% + 14px); margin-right:-14px; border-radius:6px 0 0 6px;}
@@ -1751,7 +1755,7 @@ function memoRenderMonth(){
   const emp=document.getElementById('memoEmpty');
   if(emp) emp.style.display = memoEvents.length? 'none':'block';
   const wrap=document.getElementById('memoWrap');
-  if(wrap) wrap.style.maxHeight='none';
+  if(wrap){ wrap.style.maxHeight='none'; wrap.classList.remove('sq'); }
   bindMemoGrid();
 }
 
@@ -1783,6 +1787,7 @@ function memoRenderScroll(){
 
   const tds=todayStr();
   let h='';
+  let firstCell=true;   /* 视图第一个格子头上也标月份 */
   weeks.forEach(ws=>{
     for(let i=0;i<7;i++){
       const dd=addDays(ws,i);
@@ -1811,20 +1816,17 @@ function memoRenderScroll(){
         inner+='<div class="'+cls+(ev.color?'':' nobg')+'"'+mbg+' data-mev="'+esc(ev.id)+'" title="'+esc(ev.text||'')+'">'+txt+'</div>';
       });
       if(evs.length>maxShow) inner+='<div class="memo-more">+'+(evs.length-maxShow)+'</div>';
-      const mtag=(dd.getDate()===1)?'<i class="memo-mtag">'+(dd.getMonth()+1)+'月</i>':'';
+      const mtag=(firstCell||dd.getDate()===1)?'<i class="memo-mtag">'+(dd.getMonth()+1)+'月</i>':'';
       h+='<div class="memo-cell'+(ds===tds?' today':'')+(isWeekend?' other':'')+'" data-mdate="'+ds+'">'+
          '<div class="memo-d"><span>'+dd.getDate()+'</span>'+mtag+'</div>'+
          '<div class="memo-items">'+inner+'</div></div>';
+      firstCell=false;
     }
   });
   grid.innerHTML=h;
   grid.classList.add('scroll-mode');
-  /* 固定视窗高度 = 可见行数 */
-  if(wrap){
-    /* 精确高度：5 行格子（min-height 84 + 行 gap 7）；月份小标内嵌在格子头部，不占额外行 */
-    const rowH=84+7;
-    wrap.style.maxHeight=(rowH*MEMO_SCROLL_ROWS + 2)+'px';
-  }
+  /* 正方形视窗：宽=高，5 行平分（CSS aspect-ratio + grid-template-rows 负责） */
+  if(wrap){ wrap.style.maxHeight=''; wrap.classList.add('sq'); }
   const emp=document.getElementById('memoEmpty');
   if(emp) emp.style.display = memoEvents.length? 'none':'block';
   const hint=document.getElementById('memoScrollHint');
