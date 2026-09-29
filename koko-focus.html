@@ -115,7 +115,7 @@
   .timer-task b{font-size:18px; font-weight:600;}
   .tag-chip{font-size:12px; padding:3px 12px; border-radius:20px; color:#fff; font-weight:700; white-space:nowrap; display:inline-block; box-shadow:0 4px 10px -3px rgba(0,0,0,.25);}
   .paused-tag{font-size:12px; background:rgba(255,255,255,.28); padding:2px 11px; border-radius:20px; margin-left:7px; font-weight:600;}
-  .pause-countdown{flex-basis:100%; width:100%; font-size:12.5px; color:rgba(255,255,255,.62); background:none; border:none; padding:0; border-radius:0; margin-top:10px; font-weight:500; text-align:center; letter-spacing:.2px;}
+  .pause-countdown{flex-basis:100%; width:100%; font-size:12.5px; color:#fff; background:none; border:none; padding:0; border-radius:0; margin-top:10px; font-weight:500; text-align:center; letter-spacing:.2px; text-shadow:0 1px 8px rgba(0,0,0,.18);}
   .timer-display{font-size:88px; font-weight:200; letter-spacing:2px; font-variant-numeric:tabular-nums; line-height:1.05; margin:14px 0 8px; text-shadow:0 4px 24px rgba(0,0,0,.18); position:relative; z-index:1;}
   .timer-range{font-size:15px; font-weight:500; opacity:.92; letter-spacing:.4px; margin-bottom:24px; color:#fff; font-variant-numeric:tabular-nums; position:relative; z-index:1; text-shadow:0 2px 10px rgba(0,0,0,.2);}
   .timer-actions{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; position:relative; z-index:1;}
@@ -415,7 +415,7 @@
   #mindmap{flex:1 1 auto; min-width:0;}
   .lg-panel{flex:0 0 320px; max-width:320px; background:rgba(241,245,249,.55); border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:16px; align-self:stretch;}
   .lg-title{margin:0 0 12px; font-size:16px; font-weight:800; color:var(--ink);}
-  .lg-add{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .lg-add{display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(148,163,184,.3);}
   .lg-input{min-height:42px; font-size:16px; padding:0 12px; border-radius:12px; border:1px solid rgba(148,163,184,.3); background:rgba(255,255,255,.92); color:var(--ink); font-family:inherit; width:100%; box-sizing:border-box;}
   .lg-input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(91,124,250,.15);}
   .lg-add-row{display:flex; gap:8px;}
@@ -586,6 +586,12 @@
         <div id="mindmap"></div>
         <aside class="lg-panel">
           <h3 class="lg-title">🎯 长期目标</h3>
+          <datalist id="lgTagList"></datalist>
+          <div class="lg-list" id="lgList"></div>
+          <div class="lg-archive">
+            <button class="lg-arch-toggle" onclick="toggleLGArchive()">📦 已完成 (<span id="lgArchCount">0</span>)</button>
+            <div class="lg-arch-list" id="lgArchList"></div>
+          </div>
           <div class="lg-add">
             <input id="lgName" class="lg-input" placeholder="输入长期目标…">
             <div class="lg-add-row">
@@ -593,12 +599,6 @@
               <input id="lgDeadline" class="lg-input" type="date">
             </div>
             <button class="lg-add-btn" onclick="addLongGoal()">+ 添加目标</button>
-          </div>
-          <datalist id="lgTagList"></datalist>
-          <div class="lg-list" id="lgList"></div>
-          <div class="lg-archive">
-            <button class="lg-arch-toggle" onclick="toggleLGArchive()">📦 已完成 (<span id="lgArchCount">0</span>)</button>
-            <div class="lg-arch-list" id="lgArchList"></div>
           </div>
         </aside>
       </div>
@@ -1408,6 +1408,11 @@ function completeLongGoal(id){
   g.done=true; g.completedAt=todayStr();
   saveState(); refreshAll(); toast('已完成 ✓'); playSfx('done');
 }
+function uncompleteLongGoal(id){
+  const g=state.longGoals.find(x=>x.id===id); if(!g)return;
+  g.done=false; g.completedAt='';
+  saveState(); refreshAll(); toast('已恢复为未完成'); playSfx('add');
+}
 function deleteLongGoal(id){
   state.longGoals=state.longGoals.filter(x=>x.id!==id);
   saveState(); refreshAll(); toast('已删除');
@@ -1462,7 +1467,7 @@ function renderLongGoals(){
       ah+='<div class="lg-item done"><div class="lg-item-top"><span class="lg-name">'+esc(g.name)+'</span><span class="tag-chip" style="background:'+tagColor(g.tag)+'">'+esc(g.tag)+'</span></div>'+
         '<div class="lg-done-note">✅ 已经在 '+fmtMD(g.completedAt||todayStr())+' 完成</div>'+
         '<input class="lg-note-input" placeholder="备注…" value="'+esc(g.note||'')+'" onchange="setLGNote(\''+g.id+'\',this.value)">'+
-        '<div class="lg-btns"><button class="mini-btn del" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
+        '<div class="lg-btns"><button class="mini-btn ghost" onclick="uncompleteLongGoal(\''+g.id+'\')">↩ 恢复</button><button class="mini-btn del" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
     });
     al.innerHTML=ah;
     al.style.display=lgArchOpen?'block':'none';
@@ -1557,7 +1562,7 @@ function endTimer(auto){
   const t=state.timer;
   // 自动结束（暂停超时）：总时长只算到暂停那一刻（不含那 10 分钟休息）
   const total=(auto && t.paused) ? (t.focusMs||t.accumulated||0) : elapsedMs();
-  if(total<1000){state.timer=null;saveState();refreshAll();return;}
+  if(total<60000){ state.timer=null; saveState(); refreshAll(); toast('专注不足 1 分钟，不计入时长'); return; }
   // 起始时间：累加模式下 start 会被不断重置，用「开始时刻」需从 accumulated 反推
   const endDate=(auto && t.paused && t.pausedAt) ? new Date(t.pausedAt) : new Date();
   const startDate=new Date(endDate.getTime()-total);
