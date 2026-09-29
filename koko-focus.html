@@ -489,7 +489,13 @@
   .memo-scroll-wrap::after{content:''; position:absolute; left:0; right:0; bottom:0; height:34px; background:linear-gradient(to top, rgba(255,255,255,.92), rgba(255,255,255,0)); pointer-events:none; z-index:2;}
   .memo-grid.scroll-mode{position:relative; gap:7px;}
   /* 独立圆角卡片：取消统一底，只保留边框 */
-  .memo-grid.scroll-mode .memo-cell{min-height:84px; background:#fff; border:1px solid rgba(148,163,184,.18); box-shadow:0 1px 3px -1px rgba(40,52,120,.08); padding:7px 7px 6px;}
+  .memo-grid.scroll-mode .memo-cell{min-height:84px; background:#fff; border:1px solid rgba(148,163,184,.18); box-shadow:0 1px 3px -1px rgba(40,52,120,.08); padding:7px 7px 6px; overflow:visible;}
+  .memo-grid.scroll-mode .memo-items{overflow:visible;}
+  .memo-grid.scroll-mode .memo-ev{position:relative; z-index:2;}
+  .memo-grid.scroll-mode .memo-ev.span-s{width:calc(100% + 14px); margin-right:-14px; border-radius:6px 0 0 6px;}
+  .memo-grid.scroll-mode .memo-ev.span-m{width:calc(100% + 28px); margin-left:-14px; margin-right:-14px; border-radius:0;}
+  .memo-grid.scroll-mode .memo-ev.span-e{width:calc(100% + 14px); margin-left:-14px; border-radius:0 6px 6px 0;}
+  .memo-grid.scroll-mode .memo-ev.span-lead{width:calc(100% + 14px); margin-right:-14px; border-radius:0 6px 6px 0;}
   .memo-grid.scroll-mode .memo-cell:hover{background:#fff; border-color:rgba(91,124,250,.42); box-shadow:0 8px 20px -12px rgba(40,52,120,.42); transform:translateY(-1px);}
   .memo-grid.scroll-mode .memo-cell.other{opacity:.62;}
   .memo-grid.scroll-mode .memo-cell.today{background:rgba(91,124,250,.06); border-color:var(--accent); box-shadow:0 0 0 2px rgba(91,124,250,.2);}
@@ -514,16 +520,20 @@
   .memo-more{font-size:9px; font-weight:700; color:var(--muted-2);}
   .memo-items{display:flex; flex-direction:column; gap:3px; flex:1 1 auto; min-height:0; overflow:hidden;}
   /* 跨天条：单条色块 */
-  .memo-ev{font-size:10.5px; font-weight:600; line-height:1.35; padding:3px 6px; border-radius:6px; color:#fff; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:.18s var(--ease);}
+  .memo-ev{font-size:10.5px; font-weight:600; line-height:1.35; padding:3px 6px; border-radius:6px; color:#fff; cursor:pointer; white-space:nowrap; overflow:visible; transition:.18s var(--ease);}
+  .memo-ev .mev-txt{display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* 无背景备忘：透明底 + 灰虚线边框 + 深色文字 */
+  .memo-ev.nobg{background:transparent; color:#475569; border:1px dashed rgba(148,163,184,.5); box-shadow:none;}
+  .memo-ev.nobg:hover{background:rgba(148,163,184,.08);}
   .memo-ev:hover{filter:brightness(1.08); transform:translateX(1px);}
   /* 跨天：起/中/止 三种圆角形态 */
-  .memo-ev.span-s{margin-right:-6px; border-radius:6px 2px 2px 6px;}
-  .memo-ev.span-m{margin-left:-6px; margin-right:-6px; border-radius:2px;}
-  .memo-ev.span-e{margin-left:-6px; border-radius:2px 6px 6px 2px;}
-  .memo-ev.span-so{margin-right:-6px; border-radius:6px 2px 2px 6px;}
+  .memo-ev.span-s{width:calc(100% + 10px); margin-right:-10px; border-radius:6px 0 0 6px;}
+  .memo-ev.span-m{width:calc(100% + 20px); margin-left:-10px; margin-right:-10px; border-radius:0;}
+  .memo-ev.span-e{width:calc(100% + 10px); margin-left:-10px; border-radius:0 6px 6px 0;}
+  .memo-ev.span-so{border-radius:6px;}
   /* 跨月续段：出现在本视图第一格，左端为直角表示接续前面的月份 */
-  .memo-ev.span-lead{margin-right:-6px; border-radius:2px 2px 2px 6px;}
-  .memo-ev.span-eo{margin-left:-6px; border-radius:2px 6px 6px 2px;}
+  .memo-ev.span-lead{width:calc(100% + 10px); margin-right:-10px; border-radius:0 6px 6px 0;}
+  .memo-ev.span-eo{width:calc(100% + 10px); margin-left:-10px; border-radius:0 6px 6px 0;}
   /* 编辑弹窗 */
   .memo-pop{position:fixed; inset:0; z-index:90; background:rgba(15,23,42,.28); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px;}
   .memo-pop-box{background:rgba(255,255,255,.95); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.85); border-radius:22px; padding:18px; width:360px; max-width:92vw; box-shadow:0 30px 70px -20px rgba(40,52,120,.5);}
@@ -540,6 +550,9 @@
   .memo-sw button{width:30px; height:30px; border-radius:9px; border:2px solid transparent; cursor:pointer; transition:.2s var(--ease); padding:0;}
   .memo-sw button:hover{transform:scale(1.12);}
   .memo-sw button.on{border-color:rgba(15,23,42,.5); transform:scale(1.12);}
+  .memo-sw .nobg-btn{background:#fff; border:1.5px dashed rgba(148,163,184,.55); position:relative;}
+  .memo-sw .nobg-btn::after{content:''; position:absolute; left:50%; top:50%; width:17px; height:1.5px; background:rgba(148,163,184,.8); transform:translate(-50%,-50%) rotate(-45deg);}
+  .memo-sw .nobg-btn.on{border-color:rgba(15,23,42,.55); transform:scale(1.12);}
   .memo-hint{font-size:11px; color:var(--muted-2); font-weight:600; line-height:1.6; margin-top:2px;}
   .memo-pop-btns{display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed rgba(148,163,184,.3);}
   .memo-pop-btns button{flex:1; min-height:40px; border-radius:11px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; border:none; transition:.22s var(--ease);}
@@ -549,8 +562,9 @@
   .memo-empty{padding:22px 0; text-align:center; font-size:12.5px; color:var(--muted-2); font-weight:600;}
   /* 滚动模式：跨月时的月份分隔标题行 */
   .memo-mrow{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; align-items:center;}
-  .memo-mlab{grid-column:1 / -1; font-size:11.5px; font-weight:700; color:var(--muted-2); padding:11px 2px 6px; letter-spacing:.05em; display:flex; align-items:center; gap:8px;}
-  .memo-mlab::after{content:''; flex:1; height:1px; background:rgba(148,163,184,.25);}
+  .memo-mlab{grid-column:1 / -1; display:flex; align-items:center; gap:9px; padding:11px 2px 7px; font-weight:700;}
+  .memo-mlab span{font-size:11px; line-height:1; color:#4B5BD6; background:rgba(91,124,250,.1); border:1px solid rgba(91,124,250,.18); padding:4px 11px; border-radius:20px; letter-spacing:.03em; white-space:nowrap;}
+  .memo-mlab::after{content:''; flex:1; height:1px; background:linear-gradient(90deg, rgba(148,163,184,.32), rgba(148,163,184,.04));}
   .memo-scroll-hint{font-size:11px; color:var(--muted-2); font-weight:600; text-align:center; padding:7px 0 0;}
 
   /* ===== 周报日历弹窗 ===== */
@@ -754,27 +768,6 @@
     <div class="cal-pop" id="weekCal" onclick="if(event.target===this)closeWeekCal()">
       <div class="cal-box" id="calBox"></div>
     </div>
-    <div class="cal-pop" id="datePop" onclick="if(event.target===this)closeDateCal()">
-      <div class="cal-box" id="dateBox"></div>
-    </div>
-    <div class="card">
-      <h2><span class="mk"></span>本周每日专注时长</h2>
-      <div class="bar-chart" id="weekBars"></div>
-    </div>
-    <div class="card">
-      <h2><span class="mk"></span>各标签时长占比</h2>
-      <div class="ring-wrap">
-        <svg id="weekRing" width="170" height="170" viewBox="0 0 170 170"></svg>
-        <div class="legend" id="weekLegend"></div>
-      </div>
-    </div>
-    <div class="card">
-      <h2><span class="mk"></span>连续打卡</h2>
-      <div class="streak">
-        <svg viewBox="0 0 24 24" fill="#F0913A"><path d="M12 2c1 3-1 4-1 6 0 1 1 2 2 2 2 0 3-2 3-4 2 2 3 4 3 7a7 7 0 1 1-14 0c0-4 3-6 4-9 1 2 2 2 3 0 1-3 0-5 0-7z"/></svg>
-        <div>已连续打卡 <b id="streakNum">0</b> 天</div>
-      </div>
-    </div>
     <div class="card">
       <h2><span class="mk"></span>月历备忘</h2>
       <div class="memo-bar">
@@ -796,9 +789,28 @@
       <div class="memo-scroll-wrap" id="memoWrap">
         <div class="memo-grid" id="memoGrid"></div>
       </div>
-      <div class="memo-scroll-hint" id="memoScrollHint">今天固定在第二行 · 用 ‹ › 往下看未来的周</div>
+      <div class="memo-scroll-hint" id="memoScrollHint">今天固定在中间 · 用 ‹ › 往下看未来的周</div>
       <div class="memo-empty" id="memoEmpty" style="display:none;">双击任意格子开始记一条备忘 📝</div>
     </div>
+    <div class="card">
+      <h2><span class="mk"></span>本周每日专注时长</h2>
+      <div class="bar-chart" id="weekBars"></div>
+    </div>
+    <div class="card">
+      <h2><span class="mk"></span>各标签时长占比</h2>
+      <div class="ring-wrap">
+        <svg id="weekRing" width="170" height="170" viewBox="0 0 170 170"></svg>
+        <div class="legend" id="weekLegend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="mk"></span>连续打卡</h2>
+      <div class="streak">
+        <svg viewBox="0 0 24 24" fill="#F0913A"><path d="M12 2c1 3-1 4-1 6 0 1 1 2 2 2 2 0 3-2 3-4 2 2 3 4 3 7a7 7 0 1 1-14 0c0-4 3-6 4-9 1 2 2 2 3 0 1-3 0-5 0-7z"/></svg>
+        <div>已连续打卡 <b id="streakNum">0</b> 天</div>
+      </div>
+    </div>
+
     <div class="card">
       <h2><span class="mk"></span>本周总结</h2>
       <textarea class="summary" id="weekSummary" placeholder="自动生成的总结，可手动修改…"></textarea>
@@ -808,6 +820,9 @@
   </section>
 </main>
 
+        <div class="cal-pop" id="datePop" onclick="if(event.target===this)closeDateCal()">
+      <div class="cal-box" id="dateBox"></div>
+    </div>
     <div class="memo-pop" id="memoPop" onclick="if(event.target===this)closeMemoPop()">
       <div class="memo-pop-box">
         <div class="memo-pop-hd"><span id="memoPopTitle">新建备忘</span><span id="memoPopRange"></span></div>
@@ -1720,8 +1735,9 @@ function memoRenderMonth(){
       else cls+=' span-m';
       if(isMonthLead && !isS) cls+=' span-lead';
       /* 文字只在整条起点显示；续段一律留空，视觉才连贯不重复 */
-      const txt = isS ? esc(ev.text||'') : '';
-      inner+='<div class="'+cls+'" style="background:'+esc(ev.color||MEMO_COLORS[0])+'" data-mev="'+esc(ev.id)+'" title="'+esc(ev.text||'')+'">'+txt+'</div>';
+      const txt = isS ? '<span class="mev-txt">'+esc(ev.text||'')+'</span>' : '';
+      const mbg=ev.color?' style="background:'+esc(ev.color)+'"':'';
+      inner+='<div class="'+cls+(ev.color?'':' nobg')+'"'+mbg+' data-mev="'+esc(ev.id)+'" title="'+esc(ev.text||'')+'">'+txt+'</div>';
     });
     if(evs.length>maxShow) inner+='<div class="memo-more">+'+(evs.length-maxShow)+'</div>';
     h+='<div class="memo-cell'+(ds===today?' today':'')+(isWeekend?' other':'')+'" data-mdate="'+ds+'">'+
@@ -1775,7 +1791,7 @@ function memoRenderScroll(){
     const mKey=ws.getFullYear()+'-'+pad(ws.getMonth()+1);
     /* 跨月时插入月份分隔标题 */
     if(mKey!==lastMonthKey){
-      h+='<div class="memo-mlab">'+ws.getFullYear()+'年'+(ws.getMonth()+1)+'月</div>';
+      h+='<div class="memo-mlab"><span>'+(ws.getMonth()+1)+'月</span></div>';
       lastMonthKey=mKey;
     }
     for(let i=0;i<7;i++){
@@ -1800,8 +1816,9 @@ function memoRenderScroll(){
         else if(isE) cls+=' span-e';
         else cls+=' span-m';
         if(isMonthLead && !isS) cls+=' span-lead';
-        const txt = isS ? esc(ev.text||'') : '';
-        inner+='<div class="'+cls+'" style="background:'+esc(ev.color||MEMO_COLORS[0])+'" data-mev="'+esc(ev.id)+'" title="'+esc(ev.text||'')+'">'+txt+'</div>';
+        const txt = isS ? '<span class="mev-txt">'+esc(ev.text||'')+'</span>' : '';
+        const mbg=ev.color?' style="background:'+esc(ev.color)+'"':'';
+        inner+='<div class="'+cls+(ev.color?'':' nobg')+'"'+mbg+' data-mev="'+esc(ev.id)+'" title="'+esc(ev.text||'')+'">'+txt+'</div>';
       });
       if(evs.length>maxShow) inner+='<div class="memo-more">+'+(evs.length-maxShow)+'</div>';
       h+='<div class="memo-cell'+(ds===tds?' today':'')+(isWeekend?' other':'')+'" data-mdate="'+ds+'">'+
@@ -1851,9 +1868,9 @@ function openMemoPop(id, dateStr){
   const box=document.getElementById('memoPop'); if(!box) return;
   const ev = id ? memoEvents.find(x=>x.id===id) : null;
   if(ev){
-    memoDraft={start:ev.start||dateStr, end:ev.end||ev.start||dateStr, color:ev.color||MEMO_COLORS[0]};
+    memoDraft={start:ev.start||dateStr, end:ev.end||ev.start||dateStr, color:ev.color||''};
   } else {
-    memoDraft={start:dateStr, end:dateStr, color:MEMO_COLORS[0]};
+    memoDraft={start:dateStr, end:dateStr, color:''};
   }
   const t=document.getElementById('memoText'); if(t) t.value = ev? (ev.text||'') : '';
   const ti=document.getElementById('memoPopTitle'); if(ti) ti.textContent = ev? '编辑备忘' : '新建备忘';
@@ -1869,7 +1886,8 @@ function closeMemoPop(){
 }
 function memoRenderSwatch(){
   const sw=document.getElementById('memoSw'); if(!sw) return;
-  sw.innerHTML=MEMO_COLORS.map(c=>'<button type="button" style="background:'+c+'" class="'+(c===memoDraft.color?'on':'')+'" data-mcolor="'+c+'"></button>').join('');
+  sw.innerHTML='<button type="button" class="nobg-btn'+(memoDraft.color?'':' on')+'" data-mcolor="" title="无背景"></button>'+
+    MEMO_COLORS.map(c=>'<button type="button" style="background:'+c+'" class="'+(c===memoDraft.color?'on':'')+'" data-mcolor="'+c+'"></button>').join('');
   sw.querySelectorAll('[data-mcolor]').forEach(b=>{
     b.onclick=()=>{ memoDraft.color=b.dataset.mcolor; memoRenderSwatch(); };
   });
