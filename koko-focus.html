@@ -415,6 +415,11 @@
   #mindmap{flex:1 1 auto; min-width:0;}
   .lg-panel{flex:0 0 320px; max-width:320px; background:rgba(241,245,249,.55); border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:16px; align-self:stretch;}
   .lg-title{margin:0 0 12px; font-size:16px; font-weight:800; color:var(--ink);}
+  /* 「🎯 长期目标」与左侧「全部：展开到具体任务」对齐：面板顶部垫高（桌面端） */
+  .lg-panel{padding-top:calc(16px + var(--lg-title-offset,98px));}
+  .lg-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .lg-days{font-size:12px; font-weight:700; color:#4B5BD6; background:rgba(91,124,250,.12); padding:2px 8px; border-radius:8px; white-space:nowrap;}
+  .lg-days.overdue{color:#DC2626; background:rgba(248,113,113,.14);}
   .lg-add{display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(148,163,184,.3);}
   .lg-input{min-height:42px; font-size:16px; padding:0 12px; border-radius:12px; border:1px solid rgba(148,163,184,.3); background:rgba(255,255,255,.92); color:var(--ink); font-family:inherit; width:100%; box-sizing:border-box;}
   .lg-input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(91,124,250,.15);}
@@ -443,7 +448,7 @@
   .lg-edit-row{display:flex; gap:8px; margin-bottom:8px;}
   .lg-edit-row .lg-input{flex:1; min-width:0;}
   .mini-btn.save{background:var(--accent-grad); color:#fff;}
-  @media(max-width:768px){ .mm-layout{flex-direction:column;} .lg-panel{flex:1 1 auto; max-width:none; width:100%;} }
+  @media(max-width:768px){ .mm-layout{flex-direction:column;} .lg-panel{flex:1 1 auto; max-width:none; width:100%; padding-top:16px;} }
 
   /* ===== 周报日历弹窗 ===== */
   .cal-pop{position:fixed; inset:0; z-index:80; background:rgba(15,23,42,.28); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px;}
@@ -929,6 +934,18 @@ function renderTagChips(){
 }
 function useTag(t){ document.getElementById('tagInput').value=t; }
 function fmtMD(s){ if(!s)return ''; const d=parseYMD(s); return (d.getMonth()+1)+'月'+d.getDate()+'日'; }
+function daysLeft(dl){
+  if(!dl) return null;
+  const today=parseYMD(todayStr()); const target=parseYMD(dl);
+  return Math.round((target-today)/86400000);
+}
+function fmtDaysLeft(dl){
+  const n=daysLeft(dl);
+  if(n===null) return '';
+  if(n>0) return '还有 '+n+' 天';
+  if(n===0) return '就是今天';
+  return '已逾期 '+(-n)+' 天';
+}
 function isArchived(t){ return !!(t.done && t.completedAt && t.completedAt<todayStr() && !t.pinned); }
 function activeTasks(){ return state.tasks.filter(t=>!isArchived(t)); }
 function archivedTasks(){ return state.tasks.filter(t=>isArchived(t)).sort((a,b)=>String(b.completedAt||'').localeCompare(String(a.completedAt||''))); }
@@ -1453,7 +1470,7 @@ function renderLongGoals(){
       '</div>';
     } else {
       h+='<div class="lg-item"><div class="lg-item-top"><span class="lg-name">'+esc(g.name)+'</span><span class="tag-chip" style="background:'+tagColor(g.tag)+'">'+esc(g.tag)+'</span></div>'+
-        (g.deadline?'<div class="lg-meta"><span class="lg-deadline'+(overdue?' overdue':'')+'">📅 截止 '+fmtMD(g.deadline)+'</span></div>':'')+
+        (g.deadline?'<div class="lg-meta"><span class="lg-deadline'+(overdue?' overdue':'')+'">📅 截止 '+fmtMD(g.deadline)+'</span><span class="lg-days'+(overdue?' overdue':'')+'">'+fmtDaysLeft(g.deadline)+'</span></div>':'')+
         '<div class="lg-btns"><button class="mini-btn ghost" onclick="editLongGoal(\''+g.id+'\')">编辑</button><button class="mini-btn" onclick="completeLongGoal(\''+g.id+'\')">完成</button><button class="mini-btn del" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
     }
   });
