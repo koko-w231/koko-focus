@@ -115,6 +115,7 @@
   .timer-task b{font-size:18px; font-weight:600;}
   .tag-chip{font-size:12px; padding:3px 12px; border-radius:20px; color:#fff; font-weight:700; white-space:nowrap; display:inline-block; box-shadow:0 4px 10px -3px rgba(0,0,0,.25);}
   .paused-tag{font-size:12px; background:rgba(255,255,255,.28); padding:2px 11px; border-radius:20px; margin-left:7px; font-weight:600;}
+  .pause-countdown{font-size:12.5px; color:#B45309; background:rgba(251,191,36,.14); border:1px solid rgba(251,191,36,.35); padding:5px 12px; border-radius:10px; margin-top:8px; font-weight:600;}
   .timer-display{font-size:88px; font-weight:200; letter-spacing:2px; font-variant-numeric:tabular-nums; line-height:1.05; margin:14px 0 8px; text-shadow:0 4px 24px rgba(0,0,0,.18); position:relative; z-index:1;}
   .timer-range{font-size:15px; font-weight:500; opacity:.92; letter-spacing:.4px; margin-bottom:24px; color:#fff; font-variant-numeric:tabular-nums; position:relative; z-index:1; text-shadow:0 2px 10px rgba(0,0,0,.2);}
   .timer-actions{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; position:relative; z-index:1;}
@@ -827,6 +828,7 @@ function weekSessions(offset){
   const {days}=weekRange(offset);
   return state.sessions.filter(s=>days.includes(s.date));
 }
+const PAUSE_LIMIT_MS=10*60*1000; // 暂停缓冲上限 10 分钟
 function elapsedMs(){
   if(!state.timer)return 0;
   const t=state.timer; const base=t.accumulated||0;
@@ -909,6 +911,7 @@ function renderTimer(){
     body.innerHTML='<div class="timer-task">正在专注：<b>'+esc(t.taskName)+'</b> '+
       '<span class="tag-chip" style="background:'+tagColor(t.tag)+'">'+esc(t.tag)+'</span>'+
       (paused?'<span class="paused-tag">已暂停</span>':'')+'</div>'+
+      (paused?'<div id="pauseCountdown" class="pause-countdown"></div>':'')+
       '<div class="timer-display">'+fmtHMS(elapsedMs())+'</div>'+
       '<div class="timer-range">'+fmtTimerRange()+'</div>';
     if(paused){
@@ -1024,9 +1027,10 @@ function renderDayView(sessions, live, hourH){
     if(h1<=h0)h1=h0+0.5;
     if(h1>24)h1=24;
     const top=h0*hourH,height=Math.max((h1-h0)*hourH,18);
-    const tipTxt=esc(s.taskName)+' · '+pad(st.getHours())+':'+pad(st.getMinutes())+' - '+pad(en.getHours())+':'+pad(en.getMinutes());
+    const restMin=s.restMs?Math.round(s.restMs/60000):0;
+    const tipTxt=esc(s.taskName)+' · '+pad(st.getHours())+':'+pad(st.getMinutes())+' - '+pad(en.getHours())+':'+pad(en.getMinutes())+(restMin?('（含休息 '+restMin+' 分钟）'):'');
     blocks+='<div class="blk" data-tip="'+tipTxt+'" style="top:'+top+'px;height:'+height+'px;background:'+tagColor(s.tag)+'">'+
-      '<span class="blk-t">'+esc(s.taskName)+'</span><span class="blk-d">'+esc(s.tag)+' · '+fmtHMshort((h1-h0)*3600000)+'</span></div>';
+      '<span class="blk-t">'+esc(s.taskName)+'</span><span class="blk-d">'+esc(s.tag)+' · '+fmtHMshort((h1-h0)*3600000)+(restMin?(' · 休'+restMin+'分'):'')+'</span></div>';
   });
   let labels='';
   for(let i=0;i<24;i++)labels+='<div class="hr" style="top:'+(i*hourH)+'px">'+pad(i)+':00</div>';
@@ -1074,7 +1078,7 @@ function renderWeekView(start){
       const top=h0*hourH,height=dur*hourH;
       if(top>24*hourH)return;
       const enT=new Date(st.getTime()+s.durationMs);
-      const tipT=esc(s.taskName)+' · '+pad(st.getHours())+':'+pad(st.getMinutes())+' - '+pad(enT.getHours())+':'+pad(enT.getMinutes());
+      const tipT=esc(s.taskName)+' · '+pad(st.getHours())+':'+pad(st.getMinutes())+' - '+pad(enT.getHours())+':'+pad(enT.getMinutes())+(s.restMs?('（含休息 '+Math.round(s.restMs/60000)+' 分钟）'):'');
       blocks+='<div class="wblk" data-tip="'+tipT+'" style="top:'+top+'px;height:'+height+'px;background:'+tagColor(s.tag)+'" title="'+esc(s.taskName)+'">'+esc(s.tag)+'</div>';
     });
     const isToday=ds===todayStr();
@@ -1529,21 +1533,55 @@ function startTimerById(id){
 }
 function pauseTimer(){
   if(!state.timer||state.timer.paused)return;
-  const t=state.timer; t.accumulated+=Date.now()-new Date(t.start).getTime(); t.paused=true;
-  saveState(); refreshAll(); toast('已暂停');
+  const t=state.timer;
+  t.accumulated+=Date.now()-new Date(t.start).getTime(); // 累计专注时长（不含休息）
+  t.focusMs=t.accumulated;                                // 暂停那一刻的纯专注时长
+  t.pausedAt=new Date().toISOString();                    // 暂停开始时刻
+  t.paused=true; t.restMs=0;
+  saveState(); refreshAll(); toast('已暂停 · 10 分钟内继续，休息也算专注，超时自动结束');
 }
 function resumeTimer(){
   if(!state.timer||!state.timer.paused)return;
-  state.timer.start=new Date().toISOString(); state.timer.paused=false;
-  saveState(); refreshAll();
+  const t=state.timer;
+  // 这段休息时长（≤10 分钟，因为超时会自动结束）计入总时长
+  const restMs=Date.now()-new Date(t.pausedAt||t.start).getTime();
+  t.restMs=(t.restMs||0)+restMs;
+  // 把休息时长塞回 accumulated，使 elapsedMs() 继续累计
+  t.accumulated=(t.accumulated||0)+restMs;
+  t.start=new Date().toISOString(); t.paused=false; t.pausedAt=null;
+  saveState(); refreshAll(); toast('继续专注 · 本次休息 '+fmtHM(restMs));
 }
-function endTimer(){
+function endTimer(auto){
   if(!state.timer)return;
-  const t=state.timer; const total=elapsedMs();
+  auto=(auto===true);
+  const t=state.timer;
+  // 自动结束（暂停超时）：总时长只算到暂停那一刻（不含那 10 分钟休息）
+  const total=(auto && t.paused) ? (t.focusMs||t.accumulated||0) : elapsedMs();
   if(total<1000){state.timer=null;saveState();refreshAll();return;}
-  const st=new Date(t.start);
-  state.sessions.push({id:uid(),taskName:t.taskName,tag:t.tag,start:t.start,end:new Date().toISOString(),durationMs:total,date:ymd(st)});
-  state.timer=null; saveState(); refreshAll(); toast('已记录 '+fmtHM(total)); playSfx('end');
+  // 起始时间：累加模式下 start 会被不断重置，用「开始时刻」需从 accumulated 反推
+  const endDate=(auto && t.paused && t.pausedAt) ? new Date(t.pausedAt) : new Date();
+  const startDate=new Date(endDate.getTime()-total);
+  state.sessions.push({
+    id:uid(), taskName:t.taskName, tag:t.tag,
+    start:startDate.toISOString(), end:endDate.toISOString(),
+    durationMs:total, date:ymd(startDate),
+    restMs:t.restMs||0
+  });
+  state.timer=null; saveState(); refreshAll();
+  toast(auto?('暂停超时，已自动结束并记录 '+fmtHM(total)):('已记录 '+fmtHM(total)));
+  playSfx('end');
+}
+function pauseMsLeft(){
+  if(!state.timer||!state.timer.paused||!state.timer.pausedAt) return -1;
+  return PAUSE_LIMIT_MS-(Date.now()-new Date(state.timer.pausedAt).getTime());
+}
+function pauseTick(){
+  if(!state.timer||!state.timer.paused)return;
+  const left=pauseMsLeft();
+  if(left<=0){ endTimer(true); return; }
+  const el=document.getElementById('pauseCountdown');
+  if(el){ const m=Math.floor(left/60000), sec=Math.floor((left%60000)/1000);
+    el.textContent='⏳ 还有 '+m+':'+pad(sec)+' 自动结束（休息已计入）'; }
 }
 function switchBlk(v){ state.blkView=v; saveState(); renderTimeBlocks(); }
 function blkStep(dir){
@@ -1780,6 +1818,7 @@ function init(){
   refreshAll();
   setInterval(()=>{
     renderClock();
+    if(state.timer && state.timer.paused){ pauseTick(); }
     if(state.timer && !state.timer.paused){
       const d=document.querySelector('#timerBody .timer-display');
       const r=document.querySelector('#timerBody .timer-range');
