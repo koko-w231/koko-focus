@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🦊cc工作台</title>
+<title>🦊 koko focus</title>
 <style>
   :root{
     --bg:#EEF1FB;
@@ -1558,7 +1558,7 @@ function gotoDay(ds){ state.selectedDate=ds; state.blkView='day'; saveState(); r
 function exportJSON(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='cc工作台备份_'+todayStr()+'.json'; a.click(); toast('已导出');
+  a.download='koko-focus备份_'+todayStr()+'.json'; a.click(); toast('已导出');
 }
 function importJSON(file){
   const r=new FileReader();
