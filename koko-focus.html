@@ -413,7 +413,7 @@
   /* 长期目标面板 */
   .mm-layout{display:flex; gap:20px; align-items:flex-start; margin-top:4px;}
   #mindmap{flex:1 1 auto; min-width:0;}
-  .lg-panel{flex:0 0 320px; max-width:320px; background:rgba(241,245,249,.55); border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:16px; align-self:stretch;}
+  .lg-panel{flex:0 0 320px; max-width:320px; background:rgba(241,245,249,.55); border:1px solid rgba(148,163,184,.2); border-radius:18px; padding:16px; align-self:flex-start; margin-top:var(--lg-raise,-57px);}
   .lg-title{margin:0 0 12px; font-size:16px; font-weight:800; color:var(--ink);}
   .lg-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .lg-days{font-size:12px; font-weight:700; color:#4B5BD6; background:rgba(91,124,250,.12); padding:2px 8px; border-radius:8px; white-space:nowrap;}
@@ -452,7 +452,7 @@
   .lg-edit-row{display:flex; gap:8px; margin-bottom:8px;}
   .lg-edit-row .lg-input{flex:1; min-width:0;}
   .mini-btn.save{background:var(--accent-grad); color:#fff;}
-  @media(max-width:768px){ .mm-layout{flex-direction:column;} .lg-panel{flex:1 1 auto; max-width:none; width:100%;} }
+  @media(max-width:768px){ .mm-layout{flex-direction:column;} .lg-panel{flex:1 1 auto; max-width:none; width:100%; margin-top:0;} }
 
   /* ===== 周报日历弹窗 ===== */
   .cal-pop{position:fixed; inset:0; z-index:80; background:rgba(15,23,42,.28); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px;}
