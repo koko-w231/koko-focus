@@ -1480,8 +1480,8 @@ function renderMindmap(){
   const rg=document.getElementById('mmRange');
   if(rg) rg.style.display=(mmScope==='custom')?'flex':'none';
   const fb=document.getElementById('mmFromBtn'), tb=document.getElementById('mmToBtn');
-  if(fb){ fb.textContent=mmFrom?('\U0001f4c5 '+fmtMD(mmFrom)):'\U0001f4c5 开始日期'; fb.className='mm-datebtn'+(mmFrom?'':' empty'); }
-  if(tb){ tb.textContent=mmTo?('\U0001f4c5 '+fmtMD(mmTo)):'\U0001f4c5 结束日期'; tb.className='mm-datebtn'+(mmTo?'':' empty'); }
+  if(fb){ fb.textContent=mmFrom?('📅 '+fmtMD(mmFrom)):'📅 开始日期'; fb.className='mm-datebtn'+(mmFrom?'':' empty'); }
+  if(tb){ tb.textContent=mmTo?('📅 '+fmtMD(mmTo)):'📅 结束日期'; tb.className='mm-datebtn'+(mmTo?'':' empty'); }
   box.innerHTML=buildMindmapHTML(mmScope);
   document.querySelectorAll('.mm-toggle button').forEach(b=>b.classList.toggle('active',b.dataset.scope===mmScope));
   const tri=document.getElementById('mmTriBtn');
@@ -1490,6 +1490,7 @@ function renderMindmap(){
   if(tt) tt.textContent = mmExpanded?'全部：展开到具体任务':'一级：只看各标签';
   const tip=document.getElementById('mmLevTip');
   if(tip) tip.textContent = mmExpanded?'点三角可收起，只看各标签及完成度':'点三角展开到具体任务及完成日期';
+  syncLgPanelTop();
 }
 function resetMMRange(){ mmFrom=ymd(addDays(new Date(),-6)); mmTo=todayStr(); renderMindmap(); toast('已重置为近 7 天'); }
 function mmSetDefaults(){ if(!mmFrom||!mmTo){ mmFrom=ymd(addDays(new Date(),-6)); mmTo=todayStr(); } }
@@ -1966,6 +1967,22 @@ function pickWeekDate(ds){
 
 /* ============ 统一刷新入口 ============ */
 
+/* 动态对齐：面板顶部与「▼ 展开全部」按钮齐平。
+   不能用固定负边距——上方的自定义日期行(mm-range)显示/隐藏会改变偏移量，
+   写死会导致面板盖住日期行。这里实时测量：margin-top = padding(16) - 实测偏移 */
+function syncLgPanelTop(){
+  const panel=document.querySelector('.lg-panel');
+  const expand=document.querySelector('.mm-expand');
+  const layout=document.querySelector('.mm-layout');
+  if(!panel||!expand||!layout) return;
+  if(window.innerWidth<=768){ panel.style.marginTop='0px'; return; }
+  if(typeof expand.getBoundingClientRect!=='function' || typeof layout.getBoundingClientRect!=='function') return;
+  const off=expand.getBoundingClientRect().top - layout.getBoundingClientRect().top;
+  const m=(16-off);
+  panel.style.marginTop=(m>0?0:m)+'px';
+}
+window.addEventListener('resize',syncLgPanelTop);
+
 let lgArchOpen=false;
 let lgEditing=null;
 function addLongGoal(){
@@ -2087,6 +2104,8 @@ function switchView(v){
   document.getElementById('view-'+v).classList.add('active');
   document.querySelectorAll('#topNav button,#bottomNav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   saveState();
+  /* 隐藏页签下测量无效，切到看板页签后需重新对齐长期目标面板 */
+  if(v==='board') requestAnimationFrame(syncLgPanelTop);
 }
 function toggleTask(id){
   const t=state.tasks.find(x=>x.id===id); if(!t)return;
