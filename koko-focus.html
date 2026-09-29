@@ -441,6 +441,9 @@
   .lg-deadline.overdue{color:#E0504D; font-weight:700;}
   .lg-btns{display:flex; gap:6px; margin-top:8px;}
   .lg-btns .mini-btn{flex:1; min-height:38px; font-size:13px;}
+  /* 长期目标「×」：低调灰，悬停才微红，不再抢眼 */
+  .lg-btns .mini-btn.x-soft{flex:0 0 auto; min-width:38px; padding:0 12px; background:transparent; color:rgba(100,116,139,.5); box-shadow:none; font-size:16px; font-weight:500;}
+  .lg-btns .mini-btn.x-soft:hover{background:rgba(244,113,108,.1); color:#E0504D; transform:none;}
   .lg-done-note{font-size:12px; font-weight:700; color:#0E9F6E; margin:6px 0 4px;}
   .lg-note-input{min-height:36px; font-size:13px; padding:0 10px; border-radius:10px; border:1px solid rgba(148,163,184,.28); background:rgba(255,255,255,.9); width:100%; box-sizing:border-box; font-family:inherit; color:var(--ink);}
   .lg-archive{margin-top:14px; border-top:1px dashed rgba(148,163,184,.3); padding-top:12px;}
@@ -1493,7 +1496,7 @@ function renderLongGoals(){
     } else {
       h+='<div class="lg-item" draggable="true" data-gid="'+g.id+'"><div class="lg-item-top"><span class="lg-name">'+esc(g.name)+'</span><span class="tag-chip" style="background:'+tagColor(g.tag)+'">'+esc(g.tag)+'</span><span class="lg-grip" title="拖动排序">≡</span></div>'+
         (g.deadline?'<div class="lg-meta"><span class="lg-deadline'+(overdue?' overdue':'')+'">📅 截止 '+fmtMD(g.deadline)+'</span><span class="lg-days'+(overdue?' overdue':'')+'">'+fmtDaysLeft(g.deadline)+'</span></div>':'')+
-        '<div class="lg-btns"><button class="mini-btn ghost" onclick="editLongGoal(\''+g.id+'\')">编辑</button><button class="mini-btn" onclick="completeLongGoal(\''+g.id+'\')">完成</button><button class="mini-btn del" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
+        '<div class="lg-btns"><button class="mini-btn ghost" onclick="editLongGoal(\''+g.id+'\')">编辑</button><button class="mini-btn ghost" onclick="completeLongGoal(\''+g.id+'\')">完成</button><button class="mini-btn x-soft" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
     }
   });
   box.innerHTML=h;
@@ -1506,7 +1509,7 @@ function renderLongGoals(){
       ah+='<div class="lg-item done"><div class="lg-item-top"><span class="lg-name">'+esc(g.name)+'</span><span class="tag-chip" style="background:'+tagColor(g.tag)+'">'+esc(g.tag)+'</span></div>'+
         '<div class="lg-done-note">✅ 已经在 '+fmtMD(g.completedAt||todayStr())+' 完成</div>'+
         '<input class="lg-note-input" placeholder="备注…" value="'+esc(g.note||'')+'" onchange="setLGNote(\''+g.id+'\',this.value)">'+
-        '<div class="lg-btns"><button class="mini-btn ghost" onclick="uncompleteLongGoal(\''+g.id+'\')">↩ 恢复</button><button class="mini-btn del" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
+        '<div class="lg-btns"><button class="mini-btn ghost" onclick="uncompleteLongGoal(\''+g.id+'\')">↩ 恢复</button><button class="mini-btn x-soft" onclick="deleteLongGoal(\''+g.id+'\')">×</button></div></div>';
     });
     al.innerHTML=ah;
     al.style.display=lgArchOpen?'block':'none';
