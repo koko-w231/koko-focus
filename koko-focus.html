@@ -499,7 +499,6 @@
   .memo-grid.scroll-mode .memo-ev.span-e{width:calc(100% + 14px); margin-left:-14px; border-radius:0 6px 6px 0;}
   .memo-grid.scroll-mode .memo-ev.span-lead{width:calc(100% + 14px); margin-right:-14px; border-radius:0 6px 6px 0;}
   .memo-grid.scroll-mode .memo-cell:hover{background:#fff; border-color:rgba(91,124,250,.42); box-shadow:0 8px 20px -12px rgba(40,52,120,.42); transform:translateY(-1px);}
-  .memo-grid.scroll-mode .memo-cell.other{opacity:.62;}
   .memo-grid.scroll-mode .memo-cell.today{background:rgba(91,124,250,.06); border-color:var(--accent); box-shadow:0 0 0 2px rgba(91,124,250,.2);}
   /* 今天：左上角数字做成实心圆标 */
   .memo-grid.scroll-mode .memo-cell.today .memo-d span{display:inline-flex; align-items:center; justify-content:center; width:21px; height:21px; border-radius:50%; background:var(--accent); color:#fff; font-size:11.5px; margin:-2px 0 0 -2px;}
@@ -516,7 +515,6 @@
   .memo-cell.empty{background:transparent; border-color:transparent; cursor:default; min-height:92px;}
   .memo-cell.empty:hover{transform:none; box-shadow:none; background:transparent;}
   .memo-cell.today{border-color:var(--accent); background:rgba(91,124,250,.07); box-shadow:0 0 0 2px rgba(91,124,250,.18);}
-  .memo-cell.other{opacity:.42;}
   .memo-d{font-size:12px; font-weight:700; color:var(--muted); margin-bottom:3px; display:flex; align-items:center; justify-content:space-between;}
   .memo-cell.today .memo-d{color:var(--accent);}
   .memo-more{font-size:9px; font-weight:700; color:var(--muted-2);}
@@ -1712,8 +1710,6 @@ function memoRenderMonth(){
   for(let i=0;i<startPad;i++) h+='<div class="memo-cell empty"></div>';
   for(let d=1; d<=dim; d++){
     const ds=ymd(new Date(y,m,d));
-    const day=parseYMD(ds).getDay();            // 0=日
-    const isWeekend=(day===0||day===6);
     const evs=(cellEv[ds]||[]);
     let inner='';
     const maxShow=3;
@@ -1739,7 +1735,7 @@ function memoRenderMonth(){
       inner+='<div class="'+cls+(ev.color?'':' nobg')+'"'+mbg+' data-mev="'+esc(ev.id)+'" title="'+esc(ev.text||'')+'">'+txt+'</div>';
     });
     if(evs.length>maxShow) inner+='<div class="memo-more">+'+(evs.length-maxShow)+'</div>';
-    h+='<div class="memo-cell'+(ds===today?' today':'')+(isWeekend?' other':'')+'" data-mdate="'+ds+'">'+
+    h+='<div class="memo-cell'+(ds===today?' today':'')+'" data-mdate="'+ds+'">'+
        '<div class="memo-d"><span>'+d+'</span></div>'+
        '<div class="memo-items">'+inner+'</div></div>';
   }
@@ -1790,8 +1786,6 @@ function memoRenderScroll(){
     for(let i=0;i<7;i++){
       const dd=addDays(ws,i);
       const ds=ymd(dd);
-      const day=dd.getDay();
-      const isWeekend=(day===0||day===6);
       const evs=dayEv[ds]||[];
       let inner='';
       const maxShow=3;
@@ -1815,7 +1809,7 @@ function memoRenderScroll(){
       });
       if(evs.length>maxShow) inner+='<div class="memo-more">+'+(evs.length-maxShow)+'</div>';
       const mtag=(firstCell||dd.getDate()===1)?'<i class="memo-mtag">'+(dd.getMonth()+1)+'月</i>':'';
-      h+='<div class="memo-cell'+(ds===tds?' today':'')+(isWeekend?' other':'')+'" data-mdate="'+ds+'">'+
+      h+='<div class="memo-cell'+(ds===tds?' today':'')+'" data-mdate="'+ds+'">'+
          '<div class="memo-d"><span>'+dd.getDate()+'</span>'+mtag+'</div>'+
          '<div class="memo-items">'+inner+'</div></div>';
       firstCell=false;
