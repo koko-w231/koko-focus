@@ -1755,7 +1755,7 @@ function memoRenderMonth(){
   const emp=document.getElementById('memoEmpty');
   if(emp) emp.style.display = memoEvents.length? 'none':'block';
   const wrap=document.getElementById('memoWrap');
-  if(wrap){ wrap.style.maxHeight='none'; wrap.classList.remove('sq'); }
+  if(wrap){ wrap.style.maxHeight='none'; wrap.classList.remove('sq'); wrap.style.height=''; }
   bindMemoGrid();
 }
 
@@ -1827,6 +1827,7 @@ function memoRenderScroll(){
   grid.classList.add('scroll-mode');
   /* 正方形视窗：宽=高，5 行平分（CSS aspect-ratio + grid-template-rows 负责） */
   if(wrap){ wrap.style.maxHeight=''; wrap.classList.add('sq'); }
+  syncMemoSquare();
   const emp=document.getElementById('memoEmpty');
   if(emp) emp.style.display = memoEvents.length? 'none':'block';
   const hint=document.getElementById('memoScrollHint');
@@ -1990,6 +1991,15 @@ function syncLgPanelTop(){
   panel.style.marginTop=(m>0?0:m)+'px';
 }
 window.addEventListener('resize',syncLgPanelTop);
+window.addEventListener('resize',syncMemoSquare);
+/* 滚动视窗强制正方形：实测宽度→高度相等（aspect-ratio 在隐藏/百分比高度组合下不稳定，用 JS 兜底） */
+function syncMemoSquare(){
+  const wrap=document.getElementById('memoWrap');
+  if(!wrap) return;
+  if(memoMode!=='scroll' || window.innerWidth<=768){ wrap.style.height=''; return; }
+  const w=wrap.clientWidth;
+  if(w>0) wrap.style.height=w+'px';
+}
 
 let lgArchOpen=false;
 let lgEditing=null;
@@ -2114,6 +2124,7 @@ function switchView(v){
   saveState();
   /* 隐藏页签下测量无效，切到看板页签后需重新对齐长期目标面板 */
   if(v==='board') requestAnimationFrame(syncLgPanelTop);
+  if(v==='weekly') requestAnimationFrame(syncMemoSquare);
 }
 function toggleTask(id){
   const t=state.tasks.find(x=>x.id===id); if(!t)return;
