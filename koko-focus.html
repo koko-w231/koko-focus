@@ -469,10 +469,8 @@
     .memo-ev{font-size:9.5px; padding:2px 4px;}
     .memo-d{font-size:11px;}
     .memo-grid, .memo-wd{gap:3px;}
-    /* 移动端：取消正方形，自然高度完整显示 4 行 */
-    .memo-scroll-wrap.sq{aspect-ratio:auto; max-width:none;}
-    .memo-grid.scroll-mode{height:auto; grid-template-rows:none;}
-    .memo-grid.scroll-mode .memo-cell{min-height:74px;}
+    /* 移动端：7 列太窄，格子取消 1:1，改用自然高度 */
+    .memo-grid.scroll-mode .memo-cell{aspect-ratio:auto; min-height:74px;}
   }
 
   /* ===== 月历备忘 ===== */
@@ -488,12 +486,11 @@
   .memo-modes button{width:auto; height:auto; min-height:28px; padding:0 11px; border:none; border-radius:8px; background:transparent; font-size:11.5px; font-weight:700; color:var(--muted); font-family:inherit; cursor:pointer; transition:.22s var(--ease); white-space:nowrap;}
   .memo-modes button.on{background:#fff; color:var(--accent); box-shadow:0 2px 8px -3px rgba(40,52,120,.3);}
   .memo-modes button:hover:not(.on){color:var(--accent);}
-  /* 滚动视窗：正方形（宽=高），5 行平分完整显示 */
+  /* 滚动视窗：每个日期格子 1:1（宽=高），4 行完整显示 */
   .memo-scroll-wrap{position:relative; overflow:visible; border-radius:14px;}
-  .memo-scroll-wrap.sq{aspect-ratio:1/1; max-width:560px; margin:0 auto;}
-  .memo-grid.scroll-mode{position:relative; gap:7px; height:100%; grid-template-rows:repeat(4,1fr);}
+  .memo-grid.scroll-mode{position:relative; gap:7px;}
   /* 独立圆角卡片：取消统一底，只保留边框 */
-  .memo-grid.scroll-mode .memo-cell{min-height:0; background:#fff; border:1px solid rgba(148,163,184,.18); box-shadow:0 1px 3px -1px rgba(40,52,120,.08); padding:7px 7px 6px; overflow:visible;}
+  .memo-grid.scroll-mode .memo-cell{aspect-ratio:1/1; min-height:0; background:#fff; border:1px solid rgba(148,163,184,.18); box-shadow:0 1px 3px -1px rgba(40,52,120,.08); padding:7px 7px 6px; overflow:visible;}
   .memo-grid.scroll-mode .memo-items{overflow:visible;}
   .memo-grid.scroll-mode .memo-ev{position:relative; z-index:2;}
   .memo-grid.scroll-mode .memo-ev.span-s{width:calc(100% + 14px); margin-right:-14px; border-radius:6px 0 0 6px;}
@@ -1819,9 +1816,8 @@ function memoRenderScroll(){
   });
   grid.innerHTML=h;
   grid.classList.add('scroll-mode');
-  /* 正方形视窗：宽=高，5 行平分（CSS aspect-ratio + grid-template-rows 负责） */
-  if(wrap){ wrap.style.maxHeight=''; wrap.classList.add('sq'); }
-  syncMemoSquare();
+  /* 格子正方形：宽=高由 .memo-cell 的 aspect-ratio 决定，无需 JS 干预 */
+  if(wrap){ wrap.style.maxHeight=''; wrap.style.height=''; wrap.classList.remove('sq'); }
   const emp=document.getElementById('memoEmpty');
   if(emp) emp.style.display = memoEvents.length? 'none':'block';
   const hint=document.getElementById('memoScrollHint');
@@ -1985,15 +1981,7 @@ function syncLgPanelTop(){
   panel.style.marginTop=(m>0?0:m)+'px';
 }
 window.addEventListener('resize',syncLgPanelTop);
-window.addEventListener('resize',syncMemoSquare);
-/* 滚动视窗强制正方形：实测宽度→高度相等（aspect-ratio 在隐藏/百分比高度组合下不稳定，用 JS 兜底） */
-function syncMemoSquare(){
-  const wrap=document.getElementById('memoWrap');
-  if(!wrap) return;
-  if(memoMode!=='scroll' || window.innerWidth<=768){ wrap.style.height=''; return; }
-  const w=wrap.clientWidth;
-  if(w>0) wrap.style.height=w+'px';
-}
+
 
 let lgArchOpen=false;
 let lgEditing=null;
@@ -2118,7 +2106,6 @@ function switchView(v){
   saveState();
   /* 隐藏页签下测量无效，切到看板页签后需重新对齐长期目标面板 */
   if(v==='board') requestAnimationFrame(syncLgPanelTop);
-  if(v==='weekly') requestAnimationFrame(syncMemoSquare);
 }
 function toggleTask(id){
   const t=state.tasks.find(x=>x.id===id); if(!t)return;
