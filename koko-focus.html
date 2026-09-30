@@ -923,7 +923,7 @@ function defaultState(){
 }
 function mkSession(name,tag,iso,dur){
   const s=new Date(iso); const e=new Date(s.getTime()+dur);
-  return {id:uid(),taskName:name,tag:tag,start:iso,end:e.toISOString(),durationMs:dur,date:ymd(s)};
+  return {id:uid(),taskId:'',taskName:name,tag:tag,start:iso,end:e.toISOString(),durationMs:dur,date:ymd(s)};
 }
 function emptyRealState(){ return {tasks:[],sessions:[],timer:null,weeklyNotes:{},selectedDate:ymd(new Date()),blkView:'day',longGoals:[]}; }
 
@@ -941,6 +941,13 @@ function normalize(s){
     if(t.subtag===undefined||t.subtag===null) t.subtag='';
     if(t.pinned===undefined) t.pinned=false;
     if(t.done && !t.completedAt) t.completedAt=t.date||'';
+  });
+  /* 专注记录(id 关联)：老数据没有 taskId，按「名字+标签」回填一次，之后改名也不会丢 */
+  s.sessions.forEach(se=>{
+    if(se.taskId===undefined||se.taskId===null){
+      const hit=s.tasks.find(t=>t.name===se.taskName && t.tag===se.tag);
+      se.taskId = hit ? hit.id : '';
+    }
   });
   s.longGoals.forEach(g=>{
     if(g.note===undefined) g.note='';
@@ -991,7 +998,15 @@ function getTags(){const t={};state.sessions.forEach(s=>{t[s.tag]=(t[s.tag]||0)+
 function todayStr(){return ymd(new Date());}
 function incompleteTasks(){const t=todayStr();return state.tasks.filter(x=>!x.done&&x.date<=t);}
 function rolledTasks(){const t=todayStr();return state.tasks.filter(x=>!x.done&&x.date<t);}
-function taskFocusDays(t){const days=new Set();(state.sessions||[]).forEach(s=>{if(s.taskName===t.name&&s.tag===t.tag&&s.date>=t.date)days.add(s.date);});return days.size;}
+/* 专注天数：优先按任务 id 关联（改名不影响），旧数据没有 id 时才回退「名字+标签」 */
+function taskFocusDays(t){
+  const days=new Set();
+  (state.sessions||[]).forEach(s=>{
+    const hit = s.taskId ? (s.taskId===t.id) : (s.taskName===t.name && s.tag===t.tag);
+    if(hit && s.date>=t.date) days.add(s.date);
+  });
+  return days.size;
+}
 function todayTasks(){const t=todayStr();return state.tasks.filter(x=>x.date===t);}
 function sessionsOn(dateStr){return state.sessions.filter(s=>s.date===dateStr);}
 function aggregateByTag(){
@@ -2132,7 +2147,16 @@ function saveEdit(id){
   const tag=document.getElementById('editTag').value.trim()||t.tag;
   const subtag=document.getElementById('editSubtag').value.trim();
   if(!name){toast('任务名不能为空');return;}
-  t.name=name; t.tag=tag; t.subtag=subtag; editId=null; saveState(); refreshAll(); toast('已保存');
+  const oldName=t.name, oldTag=t.tag;
+  t.name=name; t.tag=tag; t.subtag=subtag;
+  /* 改名/改标签：把该任务的历史专注记录一并迁移过来，避免「改个名字，专注天数归零」 */
+  (state.sessions||[]).forEach(s=>{
+    const mine = s.taskId ? (s.taskId===t.id) : (s.taskName===oldName && s.tag===oldTag);
+    if(mine){ s.taskName=name; s.tag=tag; s.taskId=t.id; }
+  });
+  /* 正在计时的话，同步计时器上的名字，否则结束后又会记成旧名 */
+  if(state.timer && state.timer.taskId===t.id){ state.timer.taskName=name; state.timer.tag=tag; }
+  editId=null; saveState(); refreshAll(); toast('已保存');
 }
 function deleteTask(id){
   if(!confirm('确定删除该任务？'))return;
@@ -2182,7 +2206,7 @@ function endTimer(auto){
   const endDate=(auto && t.paused && t.pausedAt) ? new Date(t.pausedAt) : new Date();
   const startDate=new Date(endDate.getTime()-total);
   state.sessions.push({
-    id:uid(), taskName:t.taskName, tag:t.tag,
+    id:uid(), taskId:t.taskId||'', taskName:t.taskName, tag:t.tag,
     start:startDate.toISOString(), end:endDate.toISOString(),
     durationMs:total, date:ymd(startDate),
     restMs:t.restMs||0
@@ -2275,9 +2299,10 @@ function addBackfill(){
   const dur=durMin*60000;
   const st=new Date(iso);
   if(isNaN(st.getTime())){ toast('日期或时间格式有误'); return; }
-  state.sessions.push({id:uid(),taskName:name,tag:tag,start:iso,end:new Date(st.getTime()+dur).toISOString(),durationMs:dur,date:ymd(st)});
-  if(document.getElementById('bfAddTask').checked){
-    state.tasks.push({id:uid(),name:name,tag:tag,done:true,date:date});
+  const bfNewId=document.getElementById('bfAddTask').checked?uid():'';
+  state.sessions.push({id:uid(),taskId:bfNewId,taskName:name,tag:tag,start:iso,end:new Date(st.getTime()+dur).toISOString(),durationMs:dur,date:ymd(st)});
+  if(bfNewId){
+    state.tasks.push({id:bfNewId,name:name,tag:tag,done:true,date:date});
   }
   saveState(); refreshAll();
   document.getElementById('bfName').value=''; document.getElementById('bfDur').value=''; document.getElementById('bfTag').value='';
